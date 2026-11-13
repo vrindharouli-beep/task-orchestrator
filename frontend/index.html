@@ -1,0 +1,625 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Orchestrator</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0b1120;
+            color: #e5e7eb;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 30px;
+            color: #ffffff;
+        }
+
+        header p {
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .status {
+            background: #123b32;
+            color: #4ade80;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: #172238;
+            border: 1px solid #26344c;
+            padding: 22px;
+            border-radius: 12px;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .card h2 {
+            font-size: 26px;
+            color: white;
+        }
+
+        .main-card {
+            background: #172238;
+            border: 1px solid #26344c;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .main-card h2 {
+            margin-bottom: 20px;
+        }
+
+        .task-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        input, select {
+            background: #0b1120;
+            color: white;
+            border: 1px solid #34445e;
+            padding: 13px;
+            border-radius: 7px;
+            outline: none;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 12px 17px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .add-btn {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .add-btn:hover {
+            background: #2563eb;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #26344c;
+            color: #cbd5e1;
+        }
+
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f1a2d;
+            border: 1px solid #26344c;
+            padding: 16px;
+            border-radius: 9px;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+
+        .task-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 15px;
+            overflow-wrap: anywhere;
+        }
+
+        .completed .task-title {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+
+        .task-meta {
+            margin-top: 8px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .priority {
+            font-size: 11px;
+            padding: 5px 9px;
+            border-radius: 15px;
+            margin-left: 8px;
+        }
+
+        .HIGH {
+            background: #4c2028;
+            color: #fca5a5;
+        }
+
+        .MED {
+            background: #493a1c;
+            color: #fcd34d;
+        }
+
+        .LOW {
+            background: #173d34;
+            color: #86efac;
+        }
+
+        .actions {
+            display: flex;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+
+        .complete-btn {
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .delete-btn {
+            background: #7f1d1d;
+            color: #fecaca;
+        }
+
+        .secondary-btn {
+            background: #26344c;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 30px;
+        }
+
+        #message {
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #fca5a5;
+        }
+
+        @media (max-width: 650px) {
+            body {
+                padding: 15px;
+            }
+
+            header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .task-form {
+                flex-direction: column;
+            }
+
+            .task {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .actions {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <div>
+            <h1>Task Orchestrator</h1>
+            <p>Manage and monitor your DevOps tasks</p>
+        </div>
+
+        <div class="status" id="dbStatus">
+            CHECKING DATABASE...
+        </div>
+    </header>
+
+    <section class="stats">
+
+        <div class="card">
+            <p>Total Tasks</p>
+            <h2 id="totalTasks">0</h2>
+        </div>
+
+        <div class="card">
+            <p>Completed Tasks</p>
+            <h2 id="completedTasks">0</h2>
+        </div>
+
+        <div class="card">
+            <p>Pending Tasks</p>
+            <h2 id="pendingTasks">0</h2>
+        </div>
+
+    </section>
+
+    <section class="stats">
+
+        <div class="card">
+            <p>Backend Uptime</p>
+            <h2 id="uptime">--</h2>
+        </div>
+
+        <div class="card">
+            <p>Database Latency</p>
+            <h2 id="latency">--</h2>
+        </div>
+
+        <div class="card">
+            <p>Backend Container</p>
+            <h2 id="containerName" style="font-size: 17px;">--</h2>
+        </div>
+
+    </section>
+
+    <section class="main-card">
+
+        <h2>Manage Tasks</h2>
+
+        <div id="message"></div>
+
+        <form class="task-form" id="taskForm">
+
+            <input
+                type="text"
+                id="taskTitle"
+                placeholder="Add a new DevOps milestone..."
+                maxlength="255"
+                required
+            >
+
+            <select id="priority">
+                <option value="HIGH">HIGH</option>
+                <option value="MED" selected>MED</option>
+                <option value="LOW">LOW</option>
+            </select>
+
+            <button type="submit" class="add-btn">
+                + Add Task
+            </button>
+
+        </form>
+
+        <div class="filters">
+
+            <button class="filter-btn active" data-filter="all">
+                All
+            </button>
+
+            <button class="filter-btn" data-filter="pending">
+                Pending
+            </button>
+
+            <button class="filter-btn" data-filter="completed">
+                Completed
+            </button>
+
+        </div>
+
+        <div id="taskList">
+            <div class="empty">Loading tasks...</div>
+        </div>
+
+        <button class="secondary-btn" id="seedBtn">
+            Load Sample Tasks
+        </button>
+
+    </section>
+
+</div>
+
+<script>
+    const API = "http://localhost:5000/api";
+
+    let tasks = [];
+    let currentFilter = "all";
+
+    const taskForm = document.getElementById("taskForm");
+    const taskTitle = document.getElementById("taskTitle");
+    const priority = document.getElementById("priority");
+    const taskList = document.getElementById("taskList");
+    const message = document.getElementById("message");
+
+    function showMessage(text) {
+        message.textContent = text;
+    }
+
+    async function apiRequest(url, options = {}) {
+        const response = await fetch(url, options);
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.error || "Request failed");
+        }
+
+        return data;
+    }
+
+    async function loadTasks() {
+        try {
+            tasks = await apiRequest(`${API}/tasks`);
+            renderTasks();
+        } catch (error) {
+            showMessage("Unable to load tasks: " + error.message);
+            taskList.innerHTML =
+                '<div class="empty">Could not connect to the backend.</div>';
+        }
+    }
+
+    async function loadHealth() {
+        try {
+            const data = await apiRequest(`${API}/health`);
+
+            const connected = data.database === "Connected";
+
+            document.getElementById("dbStatus").textContent =
+                connected ? "● DATABASE CONNECTED" : "● DATABASE DISCONNECTED";
+
+            document.getElementById("dbStatus").style.background =
+                connected ? "#123b32" : "#4c2028";
+
+            document.getElementById("dbStatus").style.color =
+                connected ? "#4ade80" : "#fca5a5";
+
+            document.getElementById("uptime").textContent = data.uptime;
+            document.getElementById("latency").textContent =
+                data.db_latency_ms === null ? "--" : data.db_latency_ms + " ms";
+
+            document.getElementById("containerName").textContent =
+                data.container;
+
+        } catch (error) {
+            document.getElementById("dbStatus").textContent =
+                "● BACKEND OFFLINE";
+            document.getElementById("uptime").textContent = "--";
+            document.getElementById("latency").textContent = "--";
+            document.getElementById("containerName").textContent = "--";
+        }
+    }
+
+    function renderTasks() {
+        const completed = tasks.filter(task => task.is_completed).length;
+        const pending = tasks.length - completed;
+
+        document.getElementById("totalTasks").textContent = tasks.length;
+        document.getElementById("completedTasks").textContent = completed;
+        document.getElementById("pendingTasks").textContent = pending;
+
+        let filteredTasks = tasks;
+
+        if (currentFilter === "pending") {
+            filteredTasks = tasks.filter(task => !task.is_completed);
+        }
+
+        if (currentFilter === "completed") {
+            filteredTasks = tasks.filter(task => task.is_completed);
+        }
+
+        taskList.innerHTML = "";
+
+        if (filteredTasks.length === 0) {
+            taskList.innerHTML =
+                '<div class="empty">No tasks found. Add a new task to get started.</div>';
+            return;
+        }
+
+        filteredTasks.forEach(task => {
+            const item = document.createElement("div");
+
+            item.className = task.is_completed ? "task completed" : "task";
+
+            const info = document.createElement("div");
+            info.className = "task-info";
+
+            const title = document.createElement("div");
+            title.className = "task-title";
+            title.textContent = task.title;
+
+            const priorityBadge = document.createElement("span");
+            priorityBadge.className = "priority " + task.priority;
+            priorityBadge.textContent = task.priority;
+
+            title.appendChild(priorityBadge);
+
+            const meta = document.createElement("div");
+            meta.className = "task-meta";
+            meta.textContent = "Created: " + (task.time || "Recently");
+
+            info.appendChild(title);
+            info.appendChild(meta);
+
+            const actions = document.createElement("div");
+            actions.className = "actions";
+
+            const completeButton = document.createElement("button");
+            completeButton.className = "complete-btn";
+            completeButton.textContent =
+                task.is_completed ? "Undo" : "Complete";
+
+            completeButton.addEventListener("click", () => {
+                toggleTask(task.id);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-btn";
+            deleteButton.textContent = "Delete";
+
+            deleteButton.addEventListener("click", () => {
+                deleteTask(task.id);
+            });
+
+            actions.appendChild(completeButton);
+            actions.appendChild(deleteButton);
+
+            item.appendChild(info);
+            item.appendChild(actions);
+
+            taskList.appendChild(item);
+        });
+    }
+
+    taskForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const title = taskTitle.value.trim();
+
+        if (!title) {
+            showMessage("Please enter a task title.");
+            return;
+        }
+
+        try {
+            const newTask = await apiRequest(`${API}/tasks`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    title: title,
+                    priority: priority.value
+                })
+            });
+
+            tasks.unshift(newTask);
+            taskTitle.value = "";
+            priority.value = "MED";
+            currentFilter = "all";
+
+            document.querySelectorAll(".filter-btn").forEach(button => {
+                button.classList.toggle(
+                    "active",
+                    button.dataset.filter === "all"
+                );
+            });
+
+            showMessage("");
+            renderTasks();
+
+        } catch (error) {
+            showMessage("Unable to add task: " + error.message);
+        }
+    });
+
+    async function toggleTask(id) {
+        try {
+            await apiRequest(`${API}/tasks/${id}`, {
+                method: "PUT"
+            });
+
+            await loadTasks();
+
+        } catch (error) {
+            showMessage("Unable to update task: " + error.message);
+        }
+    }
+
+    async function deleteTask(id) {
+        try {
+            await apiRequest(`${API}/tasks/${id}`, {
+                method: "DELETE"
+            });
+
+            await loadTasks();
+
+        } catch (error) {
+            showMessage("Unable to delete task: " + error.message);
+        }
+    }
+
+    document.querySelectorAll(".filter-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            currentFilter = button.dataset.filter;
+
+            document.querySelectorAll(".filter-btn").forEach(btn => {
+                btn.classList.remove("active");
+            });
+
+            button.classList.add("active");
+            renderTasks();
+        });
+    });
+
+    document.getElementById("seedBtn").addEventListener("click", async () => {
+        try {
+            await apiRequest(`${API}/tasks/seed`, {
+                method: "POST"
+            });
+
+            showMessage("Sample tasks loaded successfully.");
+            await loadTasks();
+
+        } catch (error) {
+            showMessage("Unable to load sample tasks: " + error.message);
+        }
+    });
+
+    loadTasks();
+    loadHealth();
+
+    setInterval(loadHealth, 10000);
+</script>
+
+</body>
+</html>
